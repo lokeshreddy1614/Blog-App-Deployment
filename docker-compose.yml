@@ -1,0 +1,42 @@
+version: '3.8'
+services:
+  mongo:
+    image: mongo
+    container_name: blog-db
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: secret
+    ports:
+      - "27017:27017"
+    networks:
+      - blog-network
+
+  backend:
+    build: ./server
+    container_name: blog-backend
+    restart: always
+    depends_on:
+      - mongo
+    environment:
+      MONGO_URI: "mongodb://admin:secret@mongo:27017"
+    ports:
+      - "5001:5001"
+    networks:
+      - blog-network
+
+  frontend:
+    build: ./client
+    container_name: blog-frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    networks:
+      - blog-network
+
+networks:
+  blog-network:
+    driver: bridge
+
