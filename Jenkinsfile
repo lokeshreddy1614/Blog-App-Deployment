@@ -9,7 +9,7 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 script {
-                    git branch: 'main', credentialsId: 'github-credentials-id', url: 'https://github.com/your-repo.git'
+                    git branch: 'master', credentialsId: 'github-credentials-id', url: 'https://github.com/lokeshreddy1614/Blog-App-Deployment.git'
                 }
             }
         }
