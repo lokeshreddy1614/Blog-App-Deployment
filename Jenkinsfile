@@ -2,57 +2,50 @@ pipeline {
     agent any
 
     environment {
-        PROJECT_DIR = "/home/ubuntu/Blog-App-Deployment" // Update this path if needed
+        IMAGE_FRONTEND = "blog-app-deployment_frontend"
+        IMAGE_BACKEND = "blog-app-deployment_backend"
+        CONTAINER_FRONTEND = "blog-frontend"
+        CONTAINER_BACKEND = "blog-backend"
     }
 
     stages {
         stage('Checkout Code') {
             steps {
-                script {
-                    git branch: 'master', credentialsId: 'github-credentials-id', url: 'https://github.com/lokeshreddy1614/Blog-App-Deployment.git'
-                }
+                git 'https://github.com/your-repo/blog-app-deployment.git'
             }
         }
 
-        stage('Stop and Remove Existing Containers') {
+        stage('Build Docker Images') {
             steps {
-                script {
-                    sh 'docker-compose -f $PROJECT_DIR/docker-compose.yml down'
-                }
+                sh '''
+                docker build -t $IMAGE_FRONTEND ./frontend
+                docker build -t $IMAGE_BACKEND ./backend
+                '''
             }
         }
 
-        stage('Build and Deploy') {
+        stage('Stop & Remove Old Containers') {
             steps {
-                script {
-                    sh """
-                    if [ -d "$PROJECT_DIR" ]; then
-                        echo "Project directory exists, proceeding with deployment..."
-                        docker-compose -f $PROJECT_DIR/docker-compose.yml up -d --build
-                    else
-                        echo "Error: Project directory not found!"
-                        exit 1
-                    fi
-                    """
-                }
+                sh '''
+                docker rm -f $CONTAINER_FRONTEND || true
+                docker rm -f $CONTAINER_BACKEND || true
+                '''
+            }
+        }
+
+        stage('Run New Containers') {
+            steps {
+                sh '''
+                docker run -d --name $CONTAINER_BACKEND -p 5001:5001 $IMAGE_BACKEND
+                docker run -d --name $CONTAINER_FRONTEND -p 3000:3000 $IMAGE_FRONTEND
+                '''
             }
         }
 
         stage('Verify Deployment') {
             steps {
-                script {
-                    sh 'docker ps'
-                }
+                sh 'docker ps'
             }
-        }
-    }
-
-    post {
-        success {
-            echo '✅ Deployment successful!'
-        }
-        failure {
-            echo '❌ Deployment failed!'
         }
     }
 }

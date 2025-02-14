@@ -1,14 +1,17 @@
 version: '3.8'
+
 services:
   mongo:
-    image: mongo
-    container_name: blog-db
+    image: mongo:latest
+    container_name: blog-mongo
     restart: always
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: secret
     ports:
       - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
     networks:
       - blog-network
 
@@ -19,11 +22,12 @@ services:
     depends_on:
       - mongo
     environment:
-      MONGO_URI: "mongodb://admin:secret@mongo:27017"
+      - MONGO_URI=mongodb://admin:secret@mongo:27017
     ports:
       - "5001:5001"
     networks:
       - blog-network
+    command: [ "sh", "-c", "sleep 10 && npm start" ]  # Wait for MongoDB to be ready
 
   frontend:
     build: ./client
@@ -39,4 +43,8 @@ services:
 networks:
   blog-network:
     driver: bridge
+
+volumes:
+  mongo_data:
+    driver: local
 
