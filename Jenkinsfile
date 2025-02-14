@@ -2,32 +2,44 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "ghcr.io/lokeshreddy1614/blog-app:latest"  // Change if stored in Docker Hub
-        CONTAINER_NAME = "blog-app-container"
-        PORT = "3000"
+        FRONTEND_IMAGE = "blog-app-deployment_frontend:latest"
+        BACKEND_IMAGE = "blog-app-deployment_backend:latest"
+        FRONTEND_CONTAINER = "blog-frontend-container"
+        BACKEND_CONTAINER = "blog-backend-container"
+        FRONTEND_PORT = "3000"
+        BACKEND_PORT = "5001"
     }
 
     stages {
-        stage('Clone Repository') {
-            steps {
-                git branch: 'main', url: 'https://github.com/lokeshreddy1614/Blog-App-Deployment.git'
-            }
-        }
-
-        stage('Pull Docker Image') {
+        stage('Stop & Remove Existing Containers') {
             steps {
                 script {
-                    sh 'docker pull $DOCKER_IMAGE'
+                    sh '''
+                    docker stop $FRONTEND_CONTAINER || true && docker rm $FRONTEND_CONTAINER || true
+                    docker stop $BACKEND_CONTAINER || true && docker rm $BACKEND_CONTAINER || true
+                    '''
                 }
             }
         }
 
-        stage('Deploy Application') {
+        stage('Run Backend Container') {
             steps {
                 script {
-                    sh 'docker stop $CONTAINER_NAME || true'
-                    sh 'docker rm $CONTAINER_NAME || true'
-                    sh 'docker run -d -p $PORT:3000 --name $CONTAINER_NAME $DOCKER_IMAGE'
+                    sh '''
+                    docker run -d --name $BACKEND_CONTAINER -p $BACKEND_PORT:$BACKEND_PORT $BACKEND_IMAGE
+                    '''
+                }
+            }
+        }
+
+        stage('Run Frontend Container') {
+            steps {
+                script {
+                    sh '''
+                    docker run -d --name $FRONTEND_CONTAINER -p $FRONTEND_PORT:$FRONTEND_PORT \
+                    --env REACT_APP_BACKEND_URL=http://localhost:$BACKEND_PORT \
+                    $FRONTEND_IMAGE
+                    '''
                 }
             }
         }
