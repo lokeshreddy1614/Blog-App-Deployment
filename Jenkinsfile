@@ -2,50 +2,51 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_FRONTEND = "blog-app-deployment_frontend"
-        IMAGE_BACKEND = "blog-app-deployment_backend"
-        CONTAINER_FRONTEND = "blog-frontend"
-        CONTAINER_BACKEND = "blog-backend"
+        DOCKER_IMAGE = "lokeshreddy1614/blog-app"
+        CONTAINER_NAME = "blog-app-container"
+        PORT = "3000"
     }
 
     stages {
-        stage('Checkout Code') {
+        stage('Clone Repository') {
             steps {
-                git 'https://github.com/your-repo/blog-app-deployment.git'
+                git branch: 'main', url: 'https://github.com/lokeshreddy1614/Blog-App-Deployment.git'
             }
         }
 
-        stage('Build Docker Images') {
+        stage('Build Docker Image') {
             steps {
-                sh '''
-                docker build -t $IMAGE_FRONTEND ./frontend
-                docker build -t $IMAGE_BACKEND ./backend
-                '''
+                script {
+                    sh 'docker build -t $DOCKER_IMAGE .'
+                }
             }
         }
 
-        stage('Stop & Remove Old Containers') {
+        stage('Push Docker Image') {
             steps {
-                sh '''
-                docker rm -f $CONTAINER_FRONTEND || true
-                docker rm -f $CONTAINER_BACKEND || true
-                '''
+                withDockerRegistry([credentialsId: 'docker-hub-credentials', url: '']) {
+                    sh 'docker push $DOCKER_IMAGE'
+                }
             }
         }
 
-        stage('Run New Containers') {
+        stage('Deploy Application') {
             steps {
-                sh '''
-                docker run -d --name $CONTAINER_BACKEND -p 5001:5001 $IMAGE_BACKEND
-                docker run -d --name $CONTAINER_FRONTEND -p 3000:3000 $IMAGE_FRONTEND
-                '''
+                script {
+                    sh 'docker stop $CONTAINER_NAME || true'
+                    sh 'docker rm $CONTAINER_NAME || true'
+                    sh 'docker run -d -p $PORT:3000 --name $CONTAINER_NAME $DOCKER_IMAGE'
+                }
             }
         }
+    }
 
-        stage('Verify Deployment') {
-            steps {
-                sh 'docker ps'
-            }
+    post {
+        success {
+            echo 'Deployment Successful!'
+        }
+        failure {
+            echo 'Deployment Failed!'
         }
     }
 }
