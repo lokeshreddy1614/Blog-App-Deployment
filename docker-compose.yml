@@ -22,7 +22,7 @@ services:
     depends_on:
       - mongo
     environment:
-      - MONGO_URI=mongodb://admin:secret@mongo:27017
+      - MONGO_URI=mongodb://172.31.42.158:27017/blogdb
     ports:
       - "5001:5001"
     networks:

@@ -1,10 +1,26 @@
 const mongoose = require("mongoose");
 
-mongoose.set('strictQuery', false);
 
-mongoose.connect("mongodb://blog-mongo-container:27017/BlogApp").then(() => {
-    console.log("connected!");
-}).catch((err) => {
-    console.log(err);
+const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/blogdb";
+
+mongoose
+  .connect(MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log(`Connected to MongoDB at ${MONGO_URI}`))
+  .catch((err) => console.error("MongoDB connection error:", err));
+
+const db = mongoose.connection;
+
+db.on("error", (err) => {
+  console.error("MongoDB connection error:", err);
 });
+
+db.once("open", () => {
+  console.log("MongoDB connected successfully!");
+});
+
+module.exports = db;
+
 
